@@ -37,5 +37,11 @@ public class EX_String {
 		System.out.println("12. replace(\"World\", \"Java\"): " + str1.replace("World", "Java"));
 		System.out.println(str1);
 		
+		//9. 문자열 분할 : split()
+		String[] words = str1.split(", ");
+		System.out.println("13. split(\", \"): ");
+		for(String word : words) {
+			System.out.println(" - " + word);
+		}
 	}
 }
