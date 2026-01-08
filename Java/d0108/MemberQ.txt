@@ -1,0 +1,17 @@
+회원정보
+
+Member Class
+실행 Class
+Data Class
+
+
+Name
+CallNo
+Gender
+Address
+
+
+회원 등록 프로그램 만들기
+
+조회 기능 만들기
+
