@@ -43,5 +43,10 @@ public class EX_String {
 		for(String word : words) {
 			System.out.println(" - " + word);
 		}
+		
+		//10. 문자열 비교 : equals()
+		String s1 = "abc";
+		String s2 = "abcd";
+		System.out.println(s1.equals(s2));
 	}
 }
