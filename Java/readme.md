@@ -7,7 +7,7 @@
 
 ## 🛠️ 개발 환경 (Environment)
 * **IDE**: Eclipse IDE (Enterprise Edition)
-* **JDK**: Java SE (JDK or 17)
+* **JDK**: Java SE (JDK 17)
 * **Build**: Eclipse Built-in Builder
 
 ---
