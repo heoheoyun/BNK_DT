@@ -1,0 +1,7 @@
+@Override
+public int hashCode() {
+	return Objects.hash(s);
+}
+
+
+s는 필드 값.

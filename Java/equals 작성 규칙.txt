@@ -1,0 +1,17 @@
+public boolean equals(Object obj) {
+		
+	if(this == obj) return true;			// 1. 자기 자신의 주소인지 확인
+	if(!(obj instanceof A)) return false;	// 2. 같은 타입인지 확인
+		
+	A other = (A)obj;
+	if (s == null) {						// 3. null인 경우 비교
+		return other.s == null;
+	}
+	//return s.equals(other.s);
+	return Objects.equals(s, other.s);
+}
+
+
+
+A 는 타입이름
+s 는 필드 비교
