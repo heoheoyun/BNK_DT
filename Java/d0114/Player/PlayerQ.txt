@@ -1,0 +1,21 @@
+PlayerLevel
+
+void run()
+void jump()
+void trurn()
+void showLevelMessage()
+void go()
+
+class BeginnerLevel
+class AdvancedLevel
+class SuperLevel
+
+================
+Player
+
+PlayerLevel level
+
+Player()
+PlayerLevel getLevel() 
+upgradeLevel(PlayerLevel)
+void play(int)
