@@ -1,0 +1,19 @@
+성적 처리 프로그램
+
+student
+String name
+subjects : Subject[]
+
+
+subject
+
+String subjectName ( 국어, 영어, 수학 )
+int score (0~100)
+
+학생 5명
+
+학생별 성적표를 출력하는 프로그램
+성적표 : 이름 / 과목 + 점수
+
+
+
