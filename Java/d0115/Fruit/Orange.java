@@ -1,9 +1,9 @@
 package d0115.Fruit;
 
-public class Apple {
+public class Orange {
 	
 	@Override
 	public String toString() {
-		return "Apple";
+		return "Orange";
 	}
 }
