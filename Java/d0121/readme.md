@@ -37,271 +37,55 @@
 
 ## 1. 엔티티 클래스 (`Member.java`)
 - **필드**: `id`, `pw`, `name` (모두 private)
-- **생성자 오버로딩**:
-  - `Member(String id, String pw)`: 로그인 검증용
-  - `Member(String id, String pw, String name)`: 전체 정보용 (생성자 체이닝 `this()` 사용)
+- **생성자 오버로딩**: 로그인용 2개 파라미터, 전체 정보용 3개 파라미터 (생성자 체이닝 `this()` 사용)
 - **Getter 메소드**: 각 필드에 대한 접근자 제공
 - **toString() 재정의**: 회원 정보를 보기 좋게 포맷팅하여 출력
 
 ## 2. 데이터 접근 계층 (`DBAccess.java`)
 
-### 2-1. DB 연결 관리
-```java
-private String url = "jdbc:oracle:thin:@//localhost:1521/testdb";
-private String user = "green";
-private String pw = "1234";
-private Connection con;
+### DB 연결 관리
+- 생성자에서 `DriverManager.getConnection()`으로 DB 연결 수립 및 `Connection` 객체 유지
+- `close()` 메소드로 `PreparedStatement`, `Connection` 순서로 리소스 해제
 
-public DBAccess() throws Exception {
-    con = DriverManager.getConnection(url, user, pw);
-}
-```
-- 생성자에서 DB 연결 수립 및 `Connection` 객체 유지
-
-### 2-2. 회원가입 (INSERT)
-```java
-public void insert(Member member) throws Exception {
-    sql = "INSERT INTO Member (id, pw, name) Values (?, ?, ?)";
-    pstmt = con.prepareStatement(sql);
-    pstmt.setString(1, member.getId());
-    pstmt.setString(2, member.getPw());
-    pstmt.setString(3, member.getName());
-    pstmt.executeUpdate();
-}
-```
-- `?` 플레이스홀더 3개에 `setString()`으로 값 바인딩
-- `executeUpdate()`: INSERT, UPDATE, DELETE에 사용
-
-### 2-3. 로그인 검증 (SELECT COUNT)
-```java
-public boolean check(Member member) throws Exception {
-    sql = "Select Count(*) as cnt from Member where id = ? and pw = ?";
-    pstmt = con.prepareStatement(sql);
-    pstmt.setString(1, member.getId());
-    pstmt.setString(2, member.getPw());
-    ResultSet rs = pstmt.executeQuery();
-    rs.next();
-    return rs.getInt("cnt") > 0;
-}
-```
-- `COUNT(*)`로 일치하는 레코드 개수 확인
-- 1 이상이면 로그인 성공, 0이면 실패
-
-### 2-4. 회원 조회 (SELECT)
-```java
-// 전체 회원 조회
-public ResultSet searchAll() throws Exception {
-    sql = "Select * From Member order by id";
-    pstmt = con.prepareStatement(sql);
-    return pstmt.executeQuery();
-}
-
-// 특정 회원 조회
-public ResultSet search(String id) throws Exception {
-    sql = "Select * From Member where id = ?";
-    pstmt = con.prepareStatement(sql);
-    pstmt.setString(1, id);
-    return pstmt.executeQuery();
-}
-```
-- `executeQuery()`: SELECT 쿼리에 사용, `ResultSet` 반환
-
-### 2-5. 회원 정보 수정 (UPDATE)
-```java
-public void update(Member member) throws Exception {
-    sql = "Update Member set name = ?, pw = ? where id = ?";
-    pstmt = con.prepareStatement(sql);
-    pstmt.setString(1, member.getName());
-    pstmt.setString(2, member.getPw());
-    pstmt.setString(3, member.getId());
-    pstmt.executeUpdate();
-}
-```
-- `SET` 절에 새 값 바인딩, `WHERE` 절에 조건 바인딩
-
-### 2-6. 리소스 해제
-```java
-public void close() throws Exception {
-    if (pstmt != null) pstmt.close();
-    if (con != null) con.close();
-}
-```
-- null 체크 후 `PreparedStatement`, `Connection` 순서로 종료
+### 주요 메소드
+- **insert()**: `INSERT INTO Member VALUES (?, ?, ?)` - 회원 가입 데이터 저장
+- **check()**: `SELECT COUNT(*) FROM Member WHERE id=? AND pw=?` - 로그인 검증, 일치하면 true 반환
+- **search()**: `SELECT * FROM Member WHERE id=?` - 특정 회원 조회
+- **searchAll()**: `SELECT * FROM Member ORDER BY id` - 전체 회원 조회
+- **update()**: `UPDATE Member SET name=?, pw=? WHERE id=?` - 회원 정보 수정
 
 ## 3. 비즈니스 로직 계층 (`MemberService.java`)
 
-### 3-1. 회원가입 (`register()`)
-```java
-public void register() throws Exception {
-    DBAccess db = new DBAccess();
-    
-    // 아이디 중복 검증
-    String id = null;
-    while(id == null) {
-        id = validTest("아이디", 3, 20);
-        ResultSet rs = db.search(id);
-        if(rs.next()) {
-            id = null;
-            System.out.println("이미 있는 ID 입니다.");
-        }
-        rs.close();
-    }
-    
-    // 이름, 비밀번호 입력 및 검증
-    String name = validTest("이름", 3, 20);
-    String pw = validTest("비밀번호", 3, 20);
-    while(checkPw(pw)); // 비밀번호 재입력 확인
-    
-    db.insert(new Member(id, pw, name));
-    db.close();
-}
-```
+### 회원가입 (`register()`)
 - 아이디 중복 체크: DB 조회로 기존 아이디 존재 여부 확인
-- 유효성 검증: 3~20자 길이 제한
-- 비밀번호 확인: 두 번 입력하여 일치 여부 검증
+- 유효성 검증: `validTest()` 메소드로 3~20자 길이 제한
+- 비밀번호 확인: `checkPw()` 메소드로 두 번 입력하여 일치 여부 검증
+- DB 저장: `DBAccess.insert()` 호출
 
-### 3-2. 로그인 (`logIn()`)
-```java
-public Member logIn() throws Exception {
-    DBAccess db = new DBAccess();
-    String id = sc.nextLine().trim();
-    String pw = sc.nextLine().trim();
-    
-    if(db.check(new Member(id, pw))) {
-        Member m = newMember(id);
-        db.close();
-        return m; // 로그인 성공 시 Member 객체 반환
-    } else {
-        db.close();
-        return null; // 로그인 실패 시 null 반환
-    }
-}
-```
-- `check()` 메소드로 아이디/비밀번호 일치 여부 확인
+### 로그인 (`logIn()`)
+- 아이디/비밀번호 입력 받아 `DBAccess.check()` 메소드로 검증
 - 성공 시 DB에서 전체 회원 정보 조회하여 `Member` 객체 생성 및 반환
+- 실패 시 `null` 반환
 
-### 3-3. 비밀번호 변경 (`modifyPW()`)
-```java
-public Member modifyPW(Member member) throws Exception {
-    DBAccess db = new DBAccess();
-    
-    String pw = validTest("비밀번호", 3, 20);
-    
-    // 원래 비밀번호 확인
-    if(!checkPw(member.getPw())) {
-        return member; // 확인 실패 시 기존 Member 반환
-    }
-    
-    db.update(new Member(member.getId(), pw, member.getName()));
-    db.close();
-    
-    return newMember(member.getId()); // 갱신된 정보로 새 Member 반환
-}
-```
-- 새 비밀번호 입력 및 길이 검증
+### 정보 수정 (`modifyPW()`, `modifyName()`)
+- 새 정보 입력 및 길이 검증
 - 원래 비밀번호 재입력으로 본인 확인
-- DB 업데이트 후 최신 정보로 `Member` 객체 재생성
+- DB 업데이트 후 `newMember()` 메소드로 최신 정보를 조회하여 새 `Member` 객체 반환
 
-### 3-4. 이름 변경 (`modifyName()`)
-```java
-public Member modifyName(Member member) throws Exception {
-    DBAccess db = new DBAccess();
-    
-    String name = validTest("이름", 3, 20);
-    
-    if(!checkPw(member.getPw())) {
-        return member;
-    }
-    
-    db.update(new Member(member.getId(), member.getPw(), name));
-    db.close();
-    
-    return newMember(member.getId());
-}
-```
-- 비밀번호 변경과 유사한 구조, 이름만 수정
-
-### 3-5. 유틸리티 메소드
-
-**입력 길이 검증**
-```java
-public String validTest(String s, int min, int max) {
-    String result = null;
-    while(result == null) {
-        result = sc.nextLine().trim();
-        if (!(result.length() >= min && result.length() <= max)) {
-            System.out.println(min + "자 이상 " + max + "자 이내로 써주세요.");
-            result = null;
-        }
-    }
-    return result;
-}
-```
-
-**비밀번호 재입력 확인**
-```java
-public boolean checkPw(String pw) {
-    if(!pw.equals(sc.nextLine().trim())) {
-        System.out.println("비밀번호가 일치 하지않습니다.");
-        return true; // 불일치
-    }
-    return false; // 일치
-}
-```
-
-**DB에서 최신 회원 정보 조회**
-```java
-public Member newMember(String id) throws Exception {
-    DBAccess db = new DBAccess();
-    ResultSet rs = db.search(id);
-    rs.next();
-    Member m = new Member(rs.getString("id"), rs.getString("pw"), rs.getString("name"));
-    rs.close();
-    db.close();
-    return m;
-}
-```
+### 유틸리티 메소드
+- **validTest()**: 입력 길이 검증 (min~max 자)
+- **checkPw()**: 비밀번호 재입력 확인
+- **newMember()**: DB에서 최신 회원 정보 조회 후 `Member` 객체 생성
+- **showMyInfo()**: 특정 회원 정보 출력
 
 ## 4. 실행 클래스 (`Member_Test.java`)
 
-### 4-1. 로그인 전 메뉴
-```java
-while(menu) {
-    System.out.println("=[ 시작  화면 ]=");
-    System.out.println(" 회원 가입 : 1 ");
-    System.out.println("   로그인  : 2 ");
-    System.out.println(" 메뉴 종료 : 3 ");
-    
-    switch (select) {
-        case 1: ms.register(); break;
-        case 2: 
-            m = ms.logIn();
-            if(m != null) menu = false; // 로그인 성공 시 루프 종료
-            break;
-    }
-}
-```
+### 로그인 전 메뉴
+- 회원 가입(1), 로그인(2), 종료(3) 선택
+- 로그인 성공 시 `Member` 객체 반환 받아 로그인 후 메뉴로 전환
 
-### 4-2. 로그인 후 메뉴
-```java
-while (m != null) {
-    System.out.println("=[ 회원 화면 ]=");
-    System.out.println("    내 정보    : 1 ");
-    System.out.println("   이름 변경   : 2 ");
-    System.out.println(" 비밀번호 변경 : 3 ");
-    System.out.println("    로그 아웃  : 0 ");
-    
-    switch (select) {
-        case 1: ms.showMyInfo(m); break;
-        case 2: m = ms.modifyName(m); break;
-        case 3: m = ms.modifyPW(m); break;
-        case 0: 
-            m = null; // 로그아웃
-            System.out.println("로그아웃 되었습니다.");
-            break;
-    }
-}
-```
+### 로그인 후 메뉴
+- 내 정보 조회(1), 이름 변경(2), 비밀번호 변경(3), 로그아웃(0)
 - `Member` 객체가 `null`이 아니면 로그인 상태로 간주
 - 로그아웃 시 `m = null`로 설정하여 세션 종료
 
